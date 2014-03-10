@@ -14,12 +14,26 @@ import com.google.common.collect.Maps;
 
 /**
  * A Classifier implementation using the Naive Bayes method.
+ * 
+ * The Naive Bayes method essentially chooses the classification with the
+ * highest probability using the formula:
+ *  
+ *    P(Classification) * Product(P(Term_i | Classification))
+ * 
+ * where:
+ *    P(Classification) = (Messages of Classification) / (Total Messages)
+ *   and
+ *    P(Term_i | Classification) = (Occurrences of Term in Classification) / (Total Occurrences in Classification)
+ * 
+ * 
  * @author Andrew Lo
  *
  * @param <E> Enum class representing the possible classifications 
  */
 public class NaiveBayesClassifier<E extends Enum<E>> implements Classifier {
   private static final Logger LOGGER = LoggerFactory.getLogger(NaiveBayesClassifier.class);
+  private static final double OMEGA = 1; // Constant used in Laplace smoothing
+  
   private EnumMap<E, Classification> stats;
   private Class<E> clazz;
   private int totalMessages;
@@ -66,7 +80,7 @@ public class NaiveBayesClassifier<E extends Enum<E>> implements Classifier {
     
     for (Entry<E, Classification> stat : stats.entrySet()) {
       // Calculate probability
-      Double probability = documentProbability(stat.getKey()) * messageProbability(stat.getKey(), message);
+      Double probability = classificationProbability(stat.getKey()) * messageProbability(stat.getKey(), message);
       
       if (probabilities.containsKey(probability)) {
         // TODO Should change this to a List structure to deal with collisions 
@@ -81,14 +95,16 @@ public class NaiveBayesClassifier<E extends Enum<E>> implements Classifier {
   }
 
   /**
-   * Calculates the probability that the document is of a type.
+   * Calculates the probability that the message is of a specified classification.
    * 
    * @return Double value between 0 and 1.
    */
-  private double documentProbability(E type) {
+  private double classificationProbability(E type) {
     Preconditions.checkNotNull(type, "type must not be null");
-    // Padding to avoid zero in numerator
-    return ((double) stats.get(type).getMessages() + 1) / totalMessages;
+    double messageCount = stats.get(type).getMessageCount();
+    // Apply Laplace Smoothing:
+    // (x_i + \omega) / (N + \omega * d) where i = 1 .. d
+    return (messageCount + OMEGA) / (totalMessages + OMEGA * stats.size());
   }
   
   /**
@@ -106,7 +122,7 @@ public class NaiveBayesClassifier<E extends Enum<E>> implements Classifier {
     
     String[] terms = message.split(" ");
     for (String term : terms) {
-      product *= termProbability(type, term);
+      product *= termProbability(type, term, terms.length);
     }
     
     return product;
@@ -114,22 +130,24 @@ public class NaiveBayesClassifier<E extends Enum<E>> implements Classifier {
   
   /**
    * Returns the probability of a term given a classification.
-   * @param type Classification type to query
-   * @param term Term to query
-   * @return     Probability of the individual term
+   * 
+   * @param type      Classification type to query
+   * @param term      Term to query
+   * @param termCount Number of terms in message (used for Laplace smoothing)
+   * @return          Probability of the individual term
    */
-  private double termProbability(E type, String term) {
+  private double termProbability(E type, String term, int termCount) {
     Preconditions.checkNotNull(type, "type must not be null");
     Preconditions.checkNotNull(term, "term must not be null");
     
     Classification classification = stats.get(type);
     
     // No messages, we know nothing about this classification
-    if (classification.getTotal() == 0) {
+    if (classification.getTermCount() == 0) {
       return 0;
     }
     
     // Padding to avoid zero in numerator
-    return ((double) classification.getOccurrences(term) + 1) / classification.getTotal();
+    return ((double) classification.getOccurrences(term) + OMEGA) / (classification.getTermCount() + OMEGA * termCount);
   }
 }

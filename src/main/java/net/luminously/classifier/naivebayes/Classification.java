@@ -23,7 +23,7 @@ public class Classification {
   
   /**
    * Adds a message to this classification.
-   * @param message String message to train Classifier with
+   * @param message String message to add to training set
    */
   public void addMessage(String message) {
     Preconditions.checkNotNull(message, "message must not be null");
@@ -35,10 +35,10 @@ public class Classification {
   }
 
   /**
-   * Adds a term to this classification
-   * @param term
+   * Adds a term to this classification. Helper method for <code>addMessage</code>.
+   * @param term String term to add to training set
    */
-  public void addTerm(String term) {
+  private void addTerm(String term) {
     Preconditions.checkNotNull(term, "term must not be null");
     String normalize = normalizeTerm(term);
     stats.put(normalize, stats.containsKey(normalize) ? stats.get(normalize) + 1 : 1);
@@ -61,7 +61,7 @@ public class Classification {
    * Returns the number of messages of this classification in the training set.
    * @return
    */
-  public int getMessages() {
+  public int getMessageCount() {
     return messageCount;
   }
   
@@ -74,12 +74,10 @@ public class Classification {
   private String normalizeTerm(String term) {
     Preconditions.checkNotNull(term, "term must not be null");
     String normalized = term.replaceAll("[^0-9a-zA-Z]", "").toLowerCase();
-    // All numbers linked to same token
-    /*
-    if (normalized.matches("^[0-9]*$")) {
-      normalized = "<numbers>";
+    // All numbers of same length linked to same token, useful for lumping phone numbers. area codes, etc. together
+    if (normalized.matches("^[0-9]+$")) {
+      normalized = "digits[" + term.length() + "]";
     }
-    */
     return normalized;
   }
   
@@ -87,7 +85,7 @@ public class Classification {
    * Returns the total number of items in this classification.
    * @return Integer number of items
    */
-  public int getTotal() {
+  public int getTermCount() {
     return total;
   }
 }
