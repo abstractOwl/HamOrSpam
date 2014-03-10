@@ -1,0 +1,4 @@
+# Runfile for CS165A MP-2
+
+# Command to run Classifier
+java Classifier training.txt test.txt

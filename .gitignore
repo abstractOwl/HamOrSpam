@@ -31,3 +31,7 @@ local.properties
 
 # TeXlipse plugin
 .texlipse
+
+# Project specific test files
+test.txt
+train.txt
