@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
+import net.luminously.classifier.naivebayes.NaiveBayesClassifier;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +23,7 @@ public class Main {
   /**
    * Types that the message can be.
    */
-  private enum Types { HAM, SPAM }
+  public enum Types { ham, spam }
   
   /**
    * Trains the classifier with a specified dataset
@@ -38,8 +40,16 @@ public class Main {
       String line;
       
       while ((line = reader.readLine()) != null) {
-        String[] explode = line.split("\t");
-        classifier.add(explode[0], explode[1]);
+        String[] explode = line.split("\t", 2);
+        
+        if (line.matches("^\\s*$")) {
+          // Discard empty lines
+        } else if (explode.length != 2) {
+          // Check to see that line is in proper format
+          LOGGER.warn("Found message with no tab delimiter");
+        } else {
+          classifier.add(explode[0], explode[1]);
+        }
       }
       
       reader.close();
@@ -64,7 +74,7 @@ public class Main {
       String line;
       
       while ((line = reader.readLine()) != null) {
-        System.out.println(classifier.query(line).toLowerCase());
+        System.out.println(classifier.query(line));
       }
       
       reader.close();
@@ -75,5 +85,10 @@ public class Main {
   
   public static void main(String args[]) {
     Preconditions.checkArgument(args.length == 2, "Usage: java Classifier training.txt testing.txt");
+    
+    Classifier classifier = new NaiveBayesClassifier<Types>(Types.class);
+    
+    train(classifier, args[0]);
+    test(classifier, args[1]);
   }
 }
