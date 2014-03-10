@@ -74,7 +74,9 @@ public class Main {
       String line;
       
       while ((line = reader.readLine()) != null) {
-        System.out.println(classifier.query(line));
+        if (!line.matches("^\\s*$")) { // Discard empty lines
+          System.out.println(classifier.query(line));
+        }
       }
       
       reader.close();
