@@ -1,4 +1,4 @@
 # Runfile for CS165A MP-2
 
 # Command to run Classifier
-java -jar Classifier.jar training.txt test.txt
+java -jar Classifier.jar training test
